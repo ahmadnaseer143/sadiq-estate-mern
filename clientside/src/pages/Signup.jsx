@@ -26,14 +26,16 @@ const Signup = () => {
         body: JSON.stringify(formData),
       });
       const data = await res.json();
+      console.log("data:", data);
       if (data.success == false) {
         setLoading(false);
-        console.log("data:", data);
         setError(data.message);
         return;
       }
-      setLoading(false);
-      navigate("/signin");
+      if (data.success == true) {
+        setLoading(false);
+        navigate("/signin");
+      }
     } catch (error) {
       console.log("error:", error.message);
       setLoading(false);

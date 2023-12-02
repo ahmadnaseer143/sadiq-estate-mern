@@ -3,7 +3,7 @@ import bcryptjs from "bcryptjs";
 import { errorHandler } from "../utils/error.js";
 import jwt from "jsonwebtoken";
 
-export const signup = async (req, res) => {
+export const signup = async (req, res, next) => {
   const { username, email, password } = req.body;
   try {
     const hasedPassword = bcryptjs.hashSync(password, 19);
@@ -12,9 +12,9 @@ export const signup = async (req, res) => {
     res.status(201).json("User Added Succesfully");
   } catch (error) {
     if (error.code === 11000 && error.keyPattern.username) {
-      res.status(400).json("Username already exists");
+      next(errorHandler(400, "Username already exists"));
     } else if (error.code === 11000 && error.keyPattern.email) {
-      res.status(400).json("Email already exists");
+      next(errorHandler(400, "Email already exists"));
     } else {
       res.status(500).json(error.message);
     }
