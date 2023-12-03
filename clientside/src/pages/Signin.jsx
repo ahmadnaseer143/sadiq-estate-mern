@@ -1,11 +1,17 @@
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  signInFailure,
+  signInStart,
+  signInSuccess,
+} from "../redux/user/userSlice";
 
 const Signin = () => {
   const [formData, setFormData] = useState();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { loading, error } = useSelector((state) => state.user);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleChange = (e) => {
     setFormData({
@@ -16,8 +22,8 @@ const Signin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     try {
+      dispatch(signInStart());
       const res = await fetch("api/auth/signin", {
         method: "POST",
         headers: {
@@ -27,17 +33,15 @@ const Signin = () => {
       });
       const data = await res.json();
       if (data.success == false) {
-        setLoading(false);
-        setError(data.message);
+        dispatch(signInFailure(data.message));
         return;
       }
+      dispatch(signInSuccess(data));
+      navigate("/");
     } catch (error) {
       console.log("error:", error.message);
-      setLoading(false);
-      setError(error.message);
+      dispatch(signInFailure(error.failure));
     }
-    setLoading(false);
-    navigate("/");
   };
   return (
     <div className="max-w-lg mx-auto p-3">
@@ -49,6 +53,7 @@ const Signin = () => {
           className="border rounded-lg p-3 focus:outline-none"
           id="email"
           onChange={handleChange}
+          disabled={loading}
         />
         <input
           type="password"
@@ -56,6 +61,7 @@ const Signin = () => {
           className="border rounded-lg p-3 focus:outline-none"
           id="password"
           onChange={handleChange}
+          disabled={loading}
         />
         <button className="bg-slate-700 text-white mt-4 p-3 rounded-lg uppercase hover:opacity-80 disabled:opacity-80">
           {loading ? "Loading..." : "Sign In"}
