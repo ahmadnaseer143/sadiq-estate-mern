@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
+import { getStorage } from "firebase/storage";
+import { app } from "../firebase";
 
 const Profile = () => {
   const { currentUser } = useSelector((state) => state.user);
@@ -25,10 +27,33 @@ const Profile = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log(formData);
+    const { username, email, password, avatar } = formData;
+
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("username", username);
+      formDataToSend.append("email", email);
+      formDataToSend.append("password", password);
+      formDataToSend.append("avatar", avatar);
+
+      const response = await fetch(`/api/user/${currentUser._id}`, {
+        method: "PUT",
+        body: formDataToSend,
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        console.log("User updated:", updatedUser);
+      } else {
+        const errorData = await response.json();
+        console.error("Update failed:", errorData);
+      }
+    } catch (error) {
+      console.error("Error updating user:", error.message);
+    }
   };
 
   return (
@@ -81,7 +106,6 @@ const Profile = () => {
               value={formData.password}
               onChange={handleChange}
               className="mt-1 p-2 border rounded-md w-full focus:outline-none focus:ring focus:border-blue-300"
-              required
             />
           </div>
           <div className="mb-4">
