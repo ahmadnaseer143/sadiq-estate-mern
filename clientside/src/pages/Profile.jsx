@@ -1,24 +1,29 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
-import { getStorage } from "firebase/storage";
+import {
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytesResumable,
+} from "firebase/storage";
 import { app } from "../firebase";
 
 const Profile = () => {
   const { currentUser } = useSelector((state) => state.user);
 
+  const [filePerc, setFilePerc] = useState();
   const [formData, setFormData] = useState({
     username: currentUser.username,
     email: currentUser.email,
     password: "",
     avatar: currentUser.avatar,
   });
+  const [fileUploadError, setFileUploadError] = useState();
+  const [imageFile, setImageFile] = useState();
 
   const handleChange = (e) => {
     if (e.target.name === "avatar") {
-      setFormData({
-        ...formData,
-        [e.target.name]: e.target.files[0],
-      });
+      setImageFile(e.target.files[0]);
     } else {
       setFormData({
         ...formData,
@@ -27,33 +32,60 @@ const Profile = () => {
     }
   };
 
+  const handleFileUpload = async () => {
+    const storage = getStorage(app);
+    const fileName = new Date().getTime() + imageFile.name;
+    const storageRef = ref(storage, fileName);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const progress =
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setFilePerc(Math.round(progress));
+      },
+      (error) => {
+        setFileUploadError(true);
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) =>
+          setFormData({ ...formData, avatar: downloadURL })
+        );
+      }
+    );
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    await handleFileUpload();
+
+    console.log(formData);
 
     const { username, email, password, avatar } = formData;
 
-    try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("username", username);
-      formDataToSend.append("email", email);
-      formDataToSend.append("password", password);
-      formDataToSend.append("avatar", avatar);
+    // try {
+    //   const formDataToSend = new FormData();
+    //   formDataToSend.append("username", username);
+    //   formDataToSend.append("email", email);
+    //   formDataToSend.append("password", password);
+    //   formDataToSend.append("avatar", avatar);
 
-      const response = await fetch(`/api/user/${currentUser._id}`, {
-        method: "PUT",
-        body: formDataToSend,
-      });
+    //   const response = await fetch(`/api/user/${currentUser._id}`, {
+    //     method: "PUT",
+    //     body: formDataToSend,
+    //   });
 
-      if (response.ok) {
-        const updatedUser = await response.json();
-        console.log("User updated:", updatedUser);
-      } else {
-        const errorData = await response.json();
-        console.error("Update failed:", errorData);
-      }
-    } catch (error) {
-      console.error("Error updating user:", error.message);
-    }
+    //   if (response.ok) {
+    //     const updatedUser = await response.json();
+    //     console.log("User updated:", updatedUser);
+    //   } else {
+    //     const errorData = await response.json();
+    //     console.error("Update failed:", errorData);
+    //   }
+    // } catch (error) {
+    //   console.error("Error updating user:", error.message);
+    // }
   };
 
   return (
