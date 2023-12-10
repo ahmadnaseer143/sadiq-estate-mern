@@ -36,7 +36,7 @@ const Profile = () => {
     const storage = getStorage(app);
     const fileName = new Date().getTime() + imageFile.name;
     const storageRef = ref(storage, fileName);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    const uploadTask = uploadBytesResumable(storageRef, imageFile);
 
     uploadTask.on(
       "state_changed",
@@ -59,8 +59,6 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     await handleFileUpload();
-
-    console.log(formData);
 
     const { username, email, password, avatar } = formData;
 
@@ -101,6 +99,19 @@ const Profile = () => {
             className="rounded-full h-20 w-20 object-cover border-4"
           />
         </div>
+        <p className="text-sm self-center">
+          {fileUploadError ? (
+            <span className="text-red-700">
+              Error Image upload (image must be image and less than 2 mb)
+            </span>
+          ) : filePerc > 0 && filePerc < 100 ? (
+            <span className="text-slate-700">{`Uploading ${filePerc}%`}</span>
+          ) : filePerc === 100 ? (
+            <span className="text-green-700">Image successfully uploaded!</span>
+          ) : (
+            ""
+          )}
+        </p>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">
